@@ -1,0 +1,198 @@
+// prisma/schema.prisma — Cloudaeon Employee Management Tool (CEMT)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Core employee record ─────────────────────────────
+model Employee {
+  id            String    @id @default(cuid())
+  employeeCode  String    @unique  // EMP-001
+  firstName     String
+  lastName      String
+  email         String    @unique
+  phone         String?
+  avatar        String?   // URL from S3 / Cloudinary / DiceBear
+
+  // Job details
+  department    String
+  jobTitle      String
+  role          Role      @default(EMPLOYEE)
+  status        EmpStatus @default(ACTIVE)
+  startDate     DateTime
+  endDate       DateTime?
+
+  // Reporting structure
+  managerId     String?
+  manager       Employee?  @relation("Reports", fields: [managerId], references: [id])
+  reports       Employee[] @relation("Reports")
+
+  // Relationships
+  salary        SalaryConfig?
+  leaves        Leave[]
+  payslips      Payslip[]
+  attendance    Attendance[]
+  documents     Document[]
+  performance   PerformanceReview[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([department])
+  @@index([role])
+  @@index([status])
+}
+
+// ─── Salary configuration ────────────────────────────
+model SalaryConfig {
+  id            String   @id @default(cuid())
+  employeeId    String   @unique
+  employee      Employee @relation(fields: [employeeId], references: [id])
+  basicSalary   Float
+  hra           Float    @default(0)   // housing allowance
+  transport     Float    @default(0)
+  pf            Float    @default(0)   // provident fund deduction
+  taxSlab       Float    @default(0)   // income tax %
+  effectiveFrom DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ─── Leave management ────────────────────────────────
+model Leave {
+  id          String      @id @default(cuid())
+  employeeId  String
+  employee    Employee    @relation(fields: [employeeId], references: [id])
+  type        LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  days        Int         // calculated, excludes weekends
+  reason      String
+  status      LeaveStatus @default(PENDING)
+  approverId  String?
+  approvedAt  DateTime?
+  notes       String?     // manager's note on approval/rejection
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+// ─── Monthly payslips ────────────────────────────────
+model Payslip {
+  id           String    @id @default(cuid())
+  employeeId   String
+  employee     Employee  @relation(fields: [employeeId], references: [id])
+  month        Int       // 1–12
+  year         Int
+  basicSalary  Float
+  hra          Float
+  transport    Float
+  grossPay     Float     // basic + allowances
+  pf           Float
+  tax          Float
+  deductions   Float     // pf + tax + others
+  netPay       Float     // grossPay - deductions
+  paidOn       DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([employeeId, month, year])
+  @@index([employeeId])
+  @@index([month, year])
+}
+
+// ─── Attendance ──────────────────────────────────────
+model Attendance {
+  id          String    @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id])
+  date        DateTime  @db.Date
+  checkIn     DateTime?
+  checkOut    DateTime?
+  status      AttStatus @default(PRESENT)
+  hoursWorked Float?
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+  @@index([date])
+}
+
+// ─── Documents ──────────────────────────────────────
+model Document {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  name       String   // "Offer Letter", "Aadhaar", "PAN"
+  type       String   // OFFER_LETTER | ID_PROOF | CONTRACT
+  fileUrl    String
+  uploadedAt DateTime @default(now())
+}
+
+// ─── Performance Reviews ─────────────────────────────
+model PerformanceReview {
+  id             String   @id @default(cuid())
+  employeeId     String
+  employee       Employee @relation(fields: [employeeId], references: [id])
+  quarter        String   // "Q1", "Q2", "Q3", "Q4"
+  year           Int
+  overallScore   Float
+  technicalSkills Float
+  communication  Float
+  teamwork       Float
+  leadership     Float
+  delivery       Float
+  innovation     Float
+  reviewedBy     String
+  comments       String?
+  createdAt      DateTime @default(now())
+
+  @@unique([employeeId, quarter, year])
+  @@index([employeeId])
+}
+
+// ─── Enums ──────────────────────────────────────────
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  HR
+  MANAGER
+  EMPLOYEE
+}
+
+enum EmpStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  EMERGENCY
+  MATERNITY
+  PATERNITY
+  COMPENSATORY
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AttStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  HOLIDAY
+  WEEKEND
+}
