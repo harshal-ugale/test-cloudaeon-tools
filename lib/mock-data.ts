@@ -492,7 +492,7 @@ export const DEPARTMENTS = ['Engineering', 'Human Resources', 'Product', 'Design
 export const DEMO_CREDENTIALS = [
   { role: 'Founder / CEO', email: 'founder@cloudaeon.com', password: 'demo123', empId: 'emp-001' },
   { role: 'HR Director', email: 'hr@cloudaeon.com', password: 'demo123', empId: 'emp-002' },
-  { role: 'Employee (Rahul)', email: 'rahul@cloudaeon.com', password: 'demo123', empId: 'emp-003' },
+  { role: 'Employee', email: 'rahul@cloudaeon.com', password: 'demo123', empId: 'emp-003' },
 ]
 
 // ─── Certifications ──────────────────────────────────────────────────────────
