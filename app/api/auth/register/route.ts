@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateEmail, validatePassword } from '@/lib/validation'
-import { registerUser } from '@/lib/user-registry'
+import { registerUser, type RegistrationProfile } from '@/lib/user-registry'
 import { sendActivationEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { email, password } = body as { email?: string; password?: string }
+    const body = await request.json() as {
+      email?:    string
+      password?: string
+      profile?:  RegistrationProfile
+    }
 
-    // ── Field presence ─────────────────────────────────────────────────────
+    const { email, password, profile } = body
+
+    // ── Required fields guard ──────────────────────────────────────────────
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required.' },
@@ -28,8 +33,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: pwCheck.error }, { status: 400 })
     }
 
+    // ── Profile: require core personal + employment fields ─────────────────
+    if (profile) {
+      if (!profile.firstName?.trim() || !profile.lastName?.trim()) {
+        return NextResponse.json(
+          { error: 'First name and last name are required.' },
+          { status: 400 }
+        )
+      }
+      if (!profile.mobileNumber?.trim()) {
+        return NextResponse.json(
+          { error: 'Mobile number is required.' },
+          { status: 400 }
+        )
+      }
+    }
+
     // ── Register user ──────────────────────────────────────────────────────
-    const result = registerUser(email, password)
+    const result = registerUser(email, password, profile)
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 409 })
     }
@@ -42,9 +63,8 @@ export async function POST(request: NextRequest) {
         message: emailResult.sent
           ? 'Registration successful! Please check your email to activate your account.'
           : 'Registration successful! (Demo mode: no email sent)',
-        // only returned in demo/dev mode so tester can click the link in the UI
         demoActivationLink: emailResult.demoLink ?? null,
-        alreadyPending: result.alreadyPending,
+        alreadyPending:     result.alreadyPending,
       },
       { status: 201 }
     )
