@@ -1,0 +1,281 @@
+
+<style>
+  .form-wrap { padding: 1.5rem 0; }
+  .section { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .section-icon { width: 32px; height: 32px; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .section-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); margin: 0; }
+  .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: 12px; color: var(--color-text-secondary); font-weight: 500; display: flex; align-items: center; gap: 4px; }
+  .req { color: var(--color-text-danger); font-size: 11px; }
+  .field-mock { height: 34px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); display: flex; align-items: center; padding: 0 10px; font-size: 13px; color: var(--color-text-tertiary); gap: 6px; }
+  .field-mock.select::after { content: ''; flex: 1; }
+  .field-mock .ti { font-size: 14px; color: var(--color-text-tertiary); flex-shrink: 0; }
+  .chevron { margin-left: auto; font-size: 13px; color: var(--color-text-tertiary); }
+  .field-mock.textarea { height: 54px; align-items: flex-start; padding-top: 8px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+  .badge-required { background: var(--color-background-danger); color: var(--color-text-danger); }
+  .badge-optional { background: var(--color-background-secondary); color: var(--color-text-tertiary); }
+  .span2 { grid-column: span 2; }
+  @media (max-width: 500px) { .span2 { grid-column: span 1; } }
+</style>
+
+<div class="form-wrap">
+  <h2 class="sr-only">Employee registration form fields reference for a Workday-like application</h2>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background: var(--color-background-info);">
+        <i class="ti ti-user" style="color: var(--color-text-info);" aria-hidden="true"></i>
+      </div>
+      <p class="section-title">Personal information</p>
+      <span class="badge badge-required" style="margin-left: auto;">Required</span>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <span class="field-label"><i class="ti ti-forms" aria-hidden="true"></i> First name <span class="req">*</span></span>
+        <div class="field-mock">Enter first name</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Middle name</span>
+        <div class="field-mock">Optional</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Last name <span class="req">*</span></span>
+        <div class="field-mock">Enter last name</div>
+      </div>
+      <div class="field">
+        <span class="field-label"><i class="ti ti-id-badge" aria-hidden="true"></i> Preferred / display name</span>
+        <div class="field-mock">Optional</div>
+      </div>
+      <div class="field">
+        <span class="field-label"><i class="ti ti-calendar" aria-hidden="true"></i> Date of birth <span class="req">*</span></span>
+        <div class="field-mock"><i class="ti ti-calendar-event"></i> MM / DD / YYYY</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Gender</span>
+        <div class="field-mock select">Select gender <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label">Nationality / citizenship <span class="req">*</span></span>
+        <div class="field-mock select">Select country <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label">Marital status</span>
+        <div class="field-mock select">Select <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background: var(--color-background-success);">
+        <i class="ti ti-mail" style="color: var(--color-text-success);" aria-hidden="true"></i>
+      </div>
+      <p class="section-title">Contact details</p>
+    </div>
+    <div class="field-grid">
+      <div class="field span2">
+        <span class="field-label"><i class="ti ti-mail" aria-hidden="true"></i> Work email address <span class="req">*</span></span>
+        <div class="field-mock"><i class="ti ti-mail"></i> firstname.lastname@company.com</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Personal email address</span>
+        <div class="field-mock"><i class="ti ti-mail"></i> Optional</div>
+      </div>
+      <div class="field">
+        <span class="field-label"><i class="ti ti-phone" aria-hidden="true"></i> Mobile number <span class="req">*</span></span>
+        <div class="field-mock"><i class="ti ti-phone"></i> +91 XXXXX XXXXX</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Alternate / home phone</span>
+        <div class="field-mock"><i class="ti ti-device-landline"></i> Optional</div>
+      </div>
+      <div class="field span2">
+        <span class="field-label"><i class="ti ti-map-pin" aria-hidden="true"></i> Residential address <span class="req">*</span></span>
+        <div class="field-mock textarea">Street / apartment</div>
+      </div>
+      <div class="field">
+        <span class="field-label">City <span class="req">*</span></span>
+        <div class="field-mock">City</div>
+      </div>
+      <div class="field">
+        <span class="field-label">State / province <span class="req">*</span></span>
+        <div class="field-mock select">Select state <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label">Postal / ZIP code <span class="req">*</span></span>
+        <div class="field-mock">000000</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Country <span class="req">*</span></span>
+        <div class="field-mock select">Select country <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background: var(--color-background-warning);">
+        <i class="ti ti-building" style="color: var(--color-text-warning);" aria-hidden="true"></i>
+      </div>
+      <p class="section-title">Employment details</p>
+      <span class="badge badge-required" style="margin-left: auto;">Required</span>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <span class="field-label"><i class="ti ti-id-badge-2" aria-hidden="true"></i> Employee ID <span class="req">*</span></span>
+        <div class="field-mock"><i class="ti ti-lock"></i> Auto-generated</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Job title / designation <span class="req">*</span></span>
+        <div class="field-mock select">Select role <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label"><i class="ti ti-sitemap" aria-hidden="true"></i> Department <span class="req">*</span></span>
+        <div class="field-mock select">Select dept <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label">Business unit / division</span>
+        <div class="field-mock select">Select <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label"><i class="ti ti-map-pin" aria-hidden="true"></i> Work location <span class="req">*</span></span>
+        <div class="field-mock select">Office / remote <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label"><i class="ti ti-calendar-check" aria-hidden="true"></i> Hire / start date <span class="req">*</span></span>
+        <div class="field-mock"><i class="ti ti-calendar-event"></i> MM / DD / YYYY</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Employment type <span class="req">*</span></span>
+        <div class="field-mock select">Full-time / Part-time <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label">Worker type</span>
+        <div class="field-mock select">Regular / Contractor <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label"><i class="ti ti-user-check" aria-hidden="true"></i> Direct manager / supervisor</span>
+        <div class="field-mock select">Search manager <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label">Cost center</span>
+        <div class="field-mock">CC-XXXX</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background: var(--color-background-secondary);">
+        <i class="ti ti-school" aria-hidden="true" style="color: var(--color-text-secondary);"></i>
+      </div>
+      <p class="section-title">Identity & government IDs</p>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <span class="field-label"><i class="ti ti-file-certificate" aria-hidden="true"></i> National ID / SSN / Aadhar</span>
+        <div class="field-mock"><i class="ti ti-lock"></i> Encrypted</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Passport number</span>
+        <div class="field-mock">Optional</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Tax identification number</span>
+        <div class="field-mock">PAN / TIN / EIN</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Social security / PF number</span>
+        <div class="field-mock">Optional</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background: var(--color-background-secondary);">
+        <i class="ti ti-lock" aria-hidden="true" style="color: var(--color-text-secondary);"></i>
+      </div>
+      <p class="section-title">Account credentials</p>
+      <span class="badge badge-required" style="margin-left: auto;">Required</span>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <span class="field-label"><i class="ti ti-at" aria-hidden="true"></i> Username <span class="req">*</span></span>
+        <div class="field-mock">Auto-filled from email</div>
+      </div>
+      <div class="field">
+        <span class="field-label"><i class="ti ti-lock" aria-hidden="true"></i> Password <span class="req">*</span></span>
+        <div class="field-mock"><i class="ti ti-dots"></i> ●●●●●●●●</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Confirm password <span class="req">*</span></span>
+        <div class="field-mock"><i class="ti ti-dots"></i> ●●●●●●●●</div>
+      </div>
+      <div class="field">
+        <span class="field-label"><i class="ti ti-device-mobile" aria-hidden="true"></i> MFA / 2FA method</span>
+        <div class="field-mock select">Authenticator app <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background: var(--color-background-secondary);">
+        <i class="ti ti-heart" aria-hidden="true" style="color: var(--color-text-secondary);"></i>
+      </div>
+      <p class="section-title">Emergency contact</p>
+      <span class="badge badge-optional" style="margin-left: auto;">Optional</span>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <span class="field-label">Contact name</span>
+        <div class="field-mock">Full name</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Relationship</span>
+        <div class="field-mock select">Spouse / Parent… <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label">Contact phone</span>
+        <div class="field-mock"><i class="ti ti-phone"></i> Phone number</div>
+      </div>
+      <div class="field">
+        <span class="field-label">Contact email</span>
+        <div class="field-mock"><i class="ti ti-mail"></i> Optional</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background: var(--color-background-secondary);">
+        <i class="ti ti-photo" aria-hidden="true" style="color: var(--color-text-secondary);"></i>
+      </div>
+      <p class="section-title">Profile & preferences</p>
+      <span class="badge badge-optional" style="margin-left: auto;">Optional</span>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <span class="field-label"><i class="ti ti-photo" aria-hidden="true"></i> Profile photo</span>
+        <div class="field-mock"><i class="ti ti-upload"></i> Upload photo</div>
+      </div>
+      <div class="field">
+        <span class="field-label"><i class="ti ti-language" aria-hidden="true"></i> Preferred language</span>
+        <div class="field-mock select">English <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label"><i class="ti ti-clock" aria-hidden="true"></i> Time zone</span>
+        <div class="field-mock select">IST (UTC+5:30) <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+      <div class="field">
+        <span class="field-label">Date / number format</span>
+        <div class="field-mock select">DD/MM/YYYY <i class="ti ti-chevron-down chevron"></i></div>
+      </div>
+    </div>
+  </div>
+
+</div>

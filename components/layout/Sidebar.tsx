@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { isPrivileged } from '@/lib/auth'
 import {
   LayoutDashboard, Users, CalendarDays, CreditCard, Clock,
-  BarChart2, Settings, LogOut, ChevronRight, Building2, CheckSquare
+  BarChart2, Settings, LogOut, ChevronRight, CheckSquare, ClipboardList, Award
 } from 'lucide-react'
 
 interface NavItem {
@@ -51,6 +51,24 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { href: '/attendance', label: 'Attendance', icon: Clock },
+  {
+    href: '/timesheet',
+    label: 'Timesheet',
+    icon: ClipboardList,
+    children: [
+      { href: '/timesheet', label: 'My Timesheet' },
+      { href: '/timesheet/hr', label: 'HR Review' },
+    ],
+  },
+  {
+    href: '/certifications',
+    label: 'Certifications',
+    icon: Award,
+    children: [
+      { href: '/certifications', label: 'My Certifications' },
+      { href: '/certifications/hr', label: 'HR Review' },
+    ],
+  },
   {
     href: '/performance',
     label: 'Performance',
@@ -145,6 +163,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   {item.children.map((child) => {
                     if (child.href === '/leave/approvals' && !isPrivileged(role as any) && role !== 'MANAGER') return null
                     if (child.href === '/employees/new' && !isPrivileged(role as any)) return null
+                    if (child.href === '/timesheet/hr' && !isPrivileged(role as any)) return null
+                    if (child.href === '/certifications/hr' && !isPrivileged(role as any)) return null
                     const childActive = pathname === child.href
                     return (
                       <Link

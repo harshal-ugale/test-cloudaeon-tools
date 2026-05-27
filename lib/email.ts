@@ -1,128 +1,190 @@
+/**
+ * Email sending helper using Resend.
+ *
+ * If RESEND_API_KEY is not set (demo / local dev), the activation link is
+ * returned in the response body so the developer / tester can activate
+ * accounts without a real mail server.
+ */
+
 import { Resend } from 'resend'
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
-const FROM = process.env.RESEND_FROM_EMAIL ?? 'noreply@cloudaeon.com'
+const API_KEY    = process.env.RESEND_API_KEY ?? ''
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? 'noreply@cloudaeon.com'
+const APP_URL    = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+const ORG_NAME   = process.env.NEXT_PUBLIC_ORG_NAME ?? 'Cloudaeon Technologies'
 
-interface LeaveStatusEmailPayload {
-  to: string
-  employeeName: string
-  leaveType: string
-  startDate: string
-  endDate: string
-  days: number
-  status: 'APPROVED' | 'REJECTED'
-  approverName: string
-  note?: string
+export interface SendActivationResult {
+  sent: boolean          // true = Resend API used
+  demoLink?: string      // returned when API key is absent (demo mode)
 }
 
-function buildLeaveEmailHtml(p: LeaveStatusEmailPayload): string {
-  const isApproved = p.status === 'APPROVED'
-  const statusColor = isApproved ? '#065f46' : '#991b1b'
-  const statusBg = isApproved ? '#d1fae5' : '#fee2e2'
-  const statusLabel = isApproved ? 'Approved ✅' : 'Rejected ❌'
+/**
+ * Send an account activation email.
+ * Returns { sent: true } when the email was dispatched via Resend.
+ * Returns { sent: false, demoLink } when no API key is configured so the
+ * caller can surface the link in the UI for demo purposes.
+ */
+export async function sendActivationEmail(
+  toEmail: string,
+  activationToken: string
+): Promise<SendActivationResult> {
+  const activationUrl = `${APP_URL}/activate?token=${activationToken}`
 
-  return `<!DOCTYPE html>
+  // ── Demo / local mode ─────────────────────────────────────────────────────
+  if (!API_KEY) {
+    console.log(
+      '\n[CEMT - Email skipped: no RESEND_API_KEY]\n' +
+      `Activation link for ${toEmail}:\n${activationUrl}\n`
+    )
+    return { sent: false, demoLink: activationUrl }
+  }
+
+  // ── Production: send via Resend ───────────────────────────────────────────
+  const resend = new Resend(API_KEY)
+  const year   = new Date().getFullYear()
+
+  const htmlBody = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Leave Request ${p.status}</title>
+  <title>Activate your account</title>
 </head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:Inter,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+<body style="margin:0;padding:0;background:#0f172a;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;min-height:100vh;">
+    <tr>
+      <td align="center" style="padding:40px 20px;">
+        <table width="560" cellpadding="0" cellspacing="0"
+               style="background:#1e293b;border-radius:16px;border:1px solid #334155;overflow:hidden;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#1d4ed8,#4338ca);padding:32px;text-align:center;">
+              <div style="display:inline-block;width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:12px;line-height:52px;font-size:28px;font-weight:700;color:#fff;margin-bottom:12px;">C</div>
+              <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">${ORG_NAME}</h1>
+              <p style="margin:4px 0 0;color:rgba(255,255,255,0.7);font-size:13px;">Cloudaeon Employee Management Tracker</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h2 style="margin:0 0 8px;color:#f1f5f9;font-size:20px;">Activate your account</h2>
+              <p style="margin:0 0 24px;color:#94a3b8;font-size:14px;line-height:1.6;">
+                Welcome to Cloudaeon Tracker! Click the button below to activate your account.
+                This link is valid for <strong style="color:#e2e8f0;">24 hours</strong>.
+              </p>
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#2563eb,#4338ca);border-radius:10px;padding:14px 36px;text-align:center;">
+                    <a href="${activationUrl}" style="color:#fff;text-decoration:none;font-size:15px;font-weight:600;display:block;">Activate Account</a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 8px;color:#64748b;font-size:12px;text-align:center;">Or copy &amp; paste this link into your browser:</p>
+              <p style="margin:0 0 24px;background:#0f172a;border-radius:8px;padding:10px 14px;color:#60a5fa;font-size:11px;word-break:break-all;text-align:center;">${activationUrl}</p>
+              <hr style="border:none;border-top:1px solid #334155;margin:0 0 20px;" />
+              <p style="margin:0;color:#475569;font-size:12px;line-height:1.5;">
+                If you did not register, you can safely ignore this email.<br />
+                For help contact <a href="mailto:hr@cloudaeon.com" style="color:#60a5fa;text-decoration:none;">hr@cloudaeon.com</a>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px;background:#0f172a;border-top:1px solid #1e293b;text-align:center;">
+              <p style="margin:0;color:#334155;font-size:11px;">&copy; ${year} ${ORG_NAME} &middot; CEMT v1.0</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
 
-        <!-- Header -->
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to:   toEmail,
+      subject: `Activate your ${ORG_NAME} account`,
+      html: htmlBody,
+    })
+    return { sent: true }
+  } catch (err) {
+    console.error('[CEMT] Resend error:', err)
+    return { sent: false, demoLink: activationUrl }
+  }
+}
+
+// ─── Leave status notification ────────────────────────────────────────────────
+
+export interface LeaveStatusEmailParams {
+  to:           string
+  employeeName: string
+  leaveType:    string
+  startDate:    string
+  endDate:      string
+  days:         number
+  status:       'APPROVED' | 'REJECTED'
+  approverName: string
+  note?:        string
+}
+
+/**
+ * Send a leave approval / rejection notification email.
+ * Silently skips in demo mode (no API key).
+ */
+export async function sendLeaveStatusEmail(params: LeaveStatusEmailParams): Promise<void> {
+  if (!API_KEY) {
+    console.log(`[CEMT - Email skipped] Leave ${params.status} for ${params.to}`)
+    return
+  }
+
+  const resend     = new Resend(API_KEY)
+  const isApproved = params.status === 'APPROVED'
+  const color      = isApproved ? '#10b981' : '#ef4444'
+  const label      = isApproved ? 'Approved ✓' : 'Rejected ✗'
+  const year       = new Date().getFullYear()
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>Leave ${label}</title></head>
+<body style="margin:0;padding:0;background:#0f172a;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table width="520" cellpadding="0" cellspacing="0"
+             style="background:#1e293b;border-radius:16px;border:1px solid #334155;overflow:hidden;">
         <tr>
-          <td style="background:linear-gradient(135deg,#2563eb,#4f46e5);padding:32px;text-align:center;">
-            <div style="width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
-              <span style="color:white;font-size:24px;font-weight:bold;">C</span>
-            </div>
-            <h1 style="color:white;margin:0;font-size:22px;font-weight:700;">Cloudaeon Technologies</h1>
-            <p style="color:rgba(255,255,255,0.75);margin:4px 0 0;font-size:14px;">Leave Request Update</p>
+          <td style="background:${color};padding:24px 32px;">
+            <h1 style="margin:0;color:#fff;font-size:20px;">Leave Request ${label}</h1>
+            <p style="margin:4px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">${ORG_NAME}</p>
           </td>
         </tr>
-
-        <!-- Body -->
         <tr>
-          <td style="padding:32px;">
-            <p style="color:#1e293b;font-size:16px;margin:0 0 8px;">Hi <strong>${p.employeeName}</strong>,</p>
-            <p style="color:#475569;font-size:14px;margin:0 0 24px;">
-              Your <strong>${p.leaveType.toLowerCase().replace('_', ' ')}</strong> leave request has been
-              reviewed by <strong>${p.approverName}</strong>.
-            </p>
-
-            <!-- Status banner -->
-            <div style="background:${statusBg};border-radius:10px;padding:14px 20px;text-align:center;margin-bottom:24px;">
-              <span style="color:${statusColor};font-size:20px;font-weight:700;">${statusLabel}</span>
-            </div>
-
-            <!-- Detail table -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
-              <tr style="background:#f8fafc;">
-                <td style="padding:10px 16px;color:#64748b;font-size:13px;font-weight:600;width:40%;">Leave Type</td>
-                <td style="padding:10px 16px;color:#1e293b;font-size:13px;">${p.leaveType}</td>
-              </tr>
-              <tr>
-                <td style="padding:10px 16px;color:#64748b;font-size:13px;font-weight:600;border-top:1px solid #e2e8f0;">From</td>
-                <td style="padding:10px 16px;color:#1e293b;font-size:13px;border-top:1px solid #e2e8f0;">${p.startDate}</td>
-              </tr>
-              <tr style="background:#f8fafc;">
-                <td style="padding:10px 16px;color:#64748b;font-size:13px;font-weight:600;border-top:1px solid #e2e8f0;">To</td>
-                <td style="padding:10px 16px;color:#1e293b;font-size:13px;border-top:1px solid #e2e8f0;">${p.endDate}</td>
-              </tr>
-              <tr>
-                <td style="padding:10px 16px;color:#64748b;font-size:13px;font-weight:600;border-top:1px solid #e2e8f0;">Working Days</td>
-                <td style="padding:10px 16px;color:#1e293b;font-size:13px;border-top:1px solid #e2e8f0;">${p.days} day${p.days !== 1 ? 's' : ''}</td>
-              </tr>
-              ${p.note ? `
-              <tr style="background:#f8fafc;">
-                <td style="padding:10px 16px;color:#64748b;font-size:13px;font-weight:600;border-top:1px solid #e2e8f0;">Manager Note</td>
-                <td style="padding:10px 16px;color:#1e293b;font-size:13px;border-top:1px solid #e2e8f0;font-style:italic;">"${p.note}"</td>
-              </tr>` : ''}
+          <td style="padding:28px 32px;color:#94a3b8;font-size:14px;line-height:1.7;">
+            <p style="margin:0 0 16px;">Hi <strong style="color:#f1f5f9;">${params.employeeName}</strong>,</p>
+            <p style="margin:0 0 20px;">Your leave request has been <strong style="color:${color};">${label.toLowerCase()}</strong>.</p>
+            <table style="background:#0f172a;border-radius:10px;padding:16px;width:100%;border-collapse:collapse;">
+              <tr><td style="padding:4px 0;color:#64748b;font-size:12px;">Type</td><td style="padding:4px 0;color:#e2e8f0;font-size:12px;">${params.leaveType}</td></tr>
+              <tr><td style="padding:4px 0;color:#64748b;font-size:12px;">From</td><td style="padding:4px 0;color:#e2e8f0;font-size:12px;">${params.startDate}</td></tr>
+              <tr><td style="padding:4px 0;color:#64748b;font-size:12px;">To</td><td style="padding:4px 0;color:#e2e8f0;font-size:12px;">${params.endDate}</td></tr>
+              <tr><td style="padding:4px 0;color:#64748b;font-size:12px;">Days</td><td style="padding:4px 0;color:#e2e8f0;font-size:12px;">${params.days}</td></tr>
+              <tr><td style="padding:4px 0;color:#64748b;font-size:12px;">By</td><td style="padding:4px 0;color:#e2e8f0;font-size:12px;">${params.approverName}</td></tr>
+              ${params.note ? `<tr><td style="padding:4px 0;color:#64748b;font-size:12px;">Note</td><td style="padding:4px 0;color:#e2e8f0;font-size:12px;">${params.note}</td></tr>` : ''}
             </table>
-
-            <p style="color:#475569;font-size:14px;margin:24px 0 0;">
-              ${isApproved
-                ? '🎉 Your leave is confirmed. Enjoy your time off and recharge!'
-                : '❓ If you have questions about this decision, please reach out to your manager or HR at <a href="mailto:hr@cloudaeon.com" style="color:#2563eb;">hr@cloudaeon.com</a>.'}
-            </p>
           </td>
         </tr>
-
-        <!-- Footer -->
         <tr>
-          <td style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;text-align:center;">
-            <p style="color:#94a3b8;font-size:12px;margin:0;">
-              Cloudaeon Employee Management Tool (CEMT) &nbsp;·&nbsp; © 2025 Cloudaeon Technologies<br/>
-              This is an automated notification. Please do not reply to this email.
-            </p>
+          <td style="padding:16px 32px;background:#0f172a;border-top:1px solid #1e293b;text-align:center;">
+            <p style="margin:0;color:#334155;font-size:11px;">&copy; ${year} ${ORG_NAME} &middot; CEMT v1.0</p>
           </td>
         </tr>
-
       </table>
     </td></tr>
   </table>
 </body>
 </html>`
-}
-
-export async function sendLeaveStatusEmail(payload: LeaveStatusEmailPayload): Promise<void> {
-  if (!resend) {
-    // Demo mode — log instead of sending
-    console.log('[CEMT Email - Demo] Would send to:', payload.to, '| Status:', payload.status)
-    return
-  }
-
-  const subject = payload.status === 'APPROVED'
-    ? `✅ Leave Approved — ${payload.leaveType} (${payload.days} days)`
-    : `❌ Leave Rejected — ${payload.leaveType} (${payload.days} days)`
 
   await resend.emails.send({
-    from: FROM,
-    to: payload.to,
-    subject,
-    html: buildLeaveEmailHtml(payload),
+    from:    FROM_EMAIL,
+    to:      params.to,
+    subject: `Leave request ${label} — ${ORG_NAME}`,
+    html,
   })
 }

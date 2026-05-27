@@ -39,6 +39,8 @@ model Employee {
   attendance    Attendance[]
   documents     Document[]
   performance   PerformanceReview[]
+  timesheets    Timesheet[]
+  certifications Certification[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -156,6 +158,68 @@ model PerformanceReview {
   @@index([employeeId])
 }
 
+// ─── Certifications ─────────────────────────────────
+model Certification {
+  id                  String              @id @default(cuid())
+  employeeId          String
+  employee            Employee            @relation(fields: [employeeId], references: [id])
+  certificateName     String
+  issuingOrganization String
+  issueDate           DateTime            @db.Date
+  expiryDate          DateTime?           @db.Date
+  credentialId        String?
+  fileUrl             String              // absolute path on disk: uploads/certificates/{empId}/{file}
+  fileName            String
+  fileSize            Int                 // bytes
+  mimeType            String
+  status              CertificationStatus @default(PENDING_REVIEW)
+  uploadedAt          DateTime            @default(now())
+  verifiedAt          DateTime?
+  verifiedBy          String?
+  remarks             String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+// ─── Timesheets ──────────────────────────────────────
+model Timesheet {
+  id          String          @id @default(cuid())
+  employeeId  String
+  employee    Employee        @relation(fields: [employeeId], references: [id])
+  periodStart DateTime        @db.Date
+  periodEnd   DateTime        @db.Date
+  status      TimesheetStatus @default(DRAFT)
+  totalHours  Float           @default(0)
+  entries     TimesheetEntry[]
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  reviewedBy  String?
+  remarks     String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([employeeId, periodStart])
+  @@index([employeeId])
+  @@index([status])
+  @@index([periodStart])
+}
+
+model TimesheetEntry {
+  id          String    @id @default(cuid())
+  timesheetId String
+  timesheet   Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+  date        DateTime  @db.Date
+  hoursWorked Float
+  projectName String
+  description String?
+
+  @@unique([timesheetId, date])
+  @@index([timesheetId])
+}
+
 // ─── Enums ──────────────────────────────────────────
 enum Role {
   SUPER_ADMIN
@@ -195,4 +259,17 @@ enum AttStatus {
   HALF_DAY
   HOLIDAY
   WEEKEND
+}
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum CertificationStatus {
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
 }

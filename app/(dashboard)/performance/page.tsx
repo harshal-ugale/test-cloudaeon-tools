@@ -1,22 +1,30 @@
 'use client'
 
-import { useMemo } from 'react'
-import Link from 'next/link'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { isPrivileged } from '@/lib/auth'
 import { DEMO_EMPLOYEES, DEMO_PERFORMANCE, PERFORMANCE_TREND_DATA } from '@/lib/mock-data'
 import { Avatar } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/DashboardShell'
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line,
-  Legend, Cell
+  Cell
 } from 'recharts'
-import { TrendingUp, Award, Star, BarChart2 } from 'lucide-react'
+import { TrendingUp, Award, Star, BarChart2, ExternalLink } from 'lucide-react'
+
+interface CertSummaryRow {
+  employeeId: string
+  employeeName: string
+  employeeAvatar?: string
+  department?: string
+  total: number
+  verified: number
+  pending: number
+  rejected: number
+}
 
 const SCORE_COLOR = (score: number) =>
   score >= 90 ? '#10b981' : score >= 75 ? '#3b82f6' : score >= 60 ? '#f59e0b' : '#ef4444'
@@ -27,6 +35,24 @@ const SCORE_LABEL = (score: number) =>
 export default function PerformancePage() {
   const { user } = useAuth()
   const isPriv = isPrivileged(user?.role ?? 'EMPLOYEE') || user?.role === 'MANAGER'
+
+  const [certSummary, setCertSummary] = useState<CertSummaryRow[]>([])
+
+  const authHeaders = useMemo(() => ({
+    'x-demo-role': user?.role ?? '',
+    'x-demo-emp-id': user?.employeeId ?? '',
+  }), [user])
+
+  const loadCertSummary = useCallback(async () => {
+    if (!user || !isPrivileged(user.role)) return
+    try {
+      const res = await fetch('/api/certifications/hr/summary', { headers: authHeaders })
+      const data = await res.json()
+      setCertSummary(data.summary ?? [])
+    } catch { /* non-critical */ }
+  }, [user, authHeaders])
+
+  useEffect(() => { loadCertSummary() }, [loadCertSummary])
 
   const myPerformance = useMemo(() => {
     if (isPriv) return DEMO_PERFORMANCE
@@ -220,6 +246,57 @@ export default function PerformancePage() {
           </Card>
         )}
       </div>
+
+      {/* Certification Summary — HR/Admin only */}
+      {isPrivileged(user?.role ?? 'EMPLOYEE') && certSummary.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-foreground">Certification Summary</h3>
+            <a
+              href="/certifications/hr"
+              className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+            >
+              View all <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
+          <Card>
+            <CardContent className="pt-4 pb-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left pb-2 font-medium text-muted-foreground">Employee</th>
+                      <th className="text-center pb-2 font-medium text-muted-foreground">Total</th>
+                      <th className="text-center pb-2 font-medium text-emerald-600">Verified</th>
+                      <th className="text-center pb-2 font-medium text-amber-600">Pending</th>
+                      <th className="text-center pb-2 font-medium text-red-600">Rejected</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {certSummary.map((row) => (
+                      <tr key={row.employeeId} className="hover:bg-muted/20">
+                        <td className="py-2.5">
+                          <div className="flex items-center gap-2">
+                            <Avatar name={row.employeeName} src={row.employeeAvatar} size="sm" />
+                            <div>
+                              <p className="font-medium text-foreground leading-tight">{row.employeeName}</p>
+                              <p className="text-xs text-muted-foreground">{row.department}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-2.5 text-center font-semibold">{row.total}</td>
+                        <td className="py-2.5 text-center text-emerald-600 font-semibold">{row.verified}</td>
+                        <td className="py-2.5 text-center text-amber-600 font-semibold">{row.pending}</td>
+                        <td className="py-2.5 text-center text-red-600 font-semibold">{row.rejected}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

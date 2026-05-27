@@ -120,6 +120,62 @@ export interface AuthUser {
   jobTitle: string
 }
 
+export type CertificationStatus = 'PENDING_REVIEW' | 'VERIFIED' | 'REJECTED'
+
+export interface Certification {
+  id: string
+  employeeId: string
+  employeeName?: string
+  employeeAvatar?: string
+  department?: string
+  certificateName: string
+  issuingOrganization: string
+  issueDate: string          // YYYY-MM-DD
+  expiryDate?: string        // YYYY-MM-DD
+  credentialId?: string
+  fileUrl: string            // absolute disk path (empty for mock data)
+  fileName: string
+  fileSize: number           // bytes
+  mimeType: string
+  status: CertificationStatus
+  uploadedAt: string
+  verifiedAt?: string
+  verifiedBy?: string
+  remarks?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type TimesheetStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED'
+
+export interface TimesheetEntry {
+  id: string
+  timesheetId: string
+  date: string           // YYYY-MM-DD
+  hoursWorked: number
+  projectName: string
+  description?: string
+}
+
+export interface Timesheet {
+  id: string
+  employeeId: string
+  employeeName?: string
+  employeeAvatar?: string
+  department?: string
+  periodStart: string    // YYYY-MM-DD
+  periodEnd: string      // YYYY-MM-DD
+  entries: TimesheetEntry[]
+  status: TimesheetStatus
+  totalHours: number
+  submittedAt?: string
+  reviewedAt?: string
+  reviewedBy?: string
+  remarks?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type Theme = 'default' | 'dark' | 'ocean' | 'forest' | 'sunset' | 'lavender'
 
 export interface StatCard {
