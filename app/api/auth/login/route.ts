@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
           jobTitle:   demoEmp.jobTitle,
         }
       } else if (registeredUser.profile) {
-        // Use the self-registered profile
+        // Use the self-registered full profile
         const p = registeredUser.profile
         authUser = {
           id:         registeredUser.employeeId ?? `reg-${Date.now()}`,
@@ -57,14 +57,23 @@ export async function POST(request: NextRequest) {
           jobTitle:   p.jobTitle,
         }
       } else {
-        // Account activated but no profile (edge case — minimal AuthUser)
-        return NextResponse.json(
-          {
-            error:
-              'Your account is activated but the employee profile is incomplete. Please contact HR.',
-          },
-          { status: 403 }
-        )
+        // Account activated but no profile stored yet (registered via simple form
+        // or profile was not submitted). Derive a basic identity from the email
+        // so the user can still log in and complete their profile later.
+        const localPart  = normalizedEmail.split('@')[0]           // e.g. "harshal"
+        const displayName = localPart
+          .replace(/[._-]/g, ' ')                                  // dots/underscores → spaces
+          .replace(/\b\w/g, (c) => c.toUpperCase())               // title-case
+
+        authUser = {
+          id:         registeredUser.employeeId ?? `reg-${localPart}`,
+          name:       displayName,
+          email:      normalizedEmail,
+          role:       'EMPLOYEE',
+          employeeId: registeredUser.employeeId ?? `reg-${localPart}`,
+          department: 'General',
+          jobTitle:   'Employee',
+        }
       }
 
       return NextResponse.json({ user: authUser }, { status: 200 })

@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DEMO_EMPLOYEES } from '@/lib/mock-data'
+import { getDeletedIds } from '@/lib/employee-store'
 
-/**
- * Auth guard — demo version uses custom headers set by the client.
- *
- * Production replacement (Clerk):
- *   import { auth } from '@clerk/nextjs/server'
- *   const { userId } = await auth()
- *   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
- */
 function requireAuth(request: NextRequest): { role: string; empId: string } | null {
-  const role = request.headers.get('x-demo-role')
+  const role  = request.headers.get('x-demo-role')
   const empId = request.headers.get('x-demo-emp-id')
   if (!role || !empId) return null
   return { role, empId }
@@ -23,15 +16,17 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url)
-  const dept = searchParams.get('department')
-  const role = searchParams.get('role')
+  const dept   = searchParams.get('department')
+  const role   = searchParams.get('role')
   const status = searchParams.get('status')
   const search = searchParams.get('search')?.toLowerCase()
 
-  let employees = [...DEMO_EMPLOYEES]
+  // Filter out employees that have been deleted
+  const deletedIds = getDeletedIds()
+  let employees = DEMO_EMPLOYEES.filter((e) => !deletedIds.has(e.id))
 
-  if (dept) employees = employees.filter((e) => e.department === dept)
-  if (role) employees = employees.filter((e) => e.role === role)
+  if (dept)   employees = employees.filter((e) => e.department === dept)
+  if (role)   employees = employees.filter((e) => e.role === role)
   if (status) employees = employees.filter((e) => e.status === status)
   if (search) {
     employees = employees.filter(
@@ -51,7 +46,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // In production: validate with Zod, then prisma.employee.create(...)
   const body = await request.json()
   const newEmployee = {
     id: `emp-${Date.now()}`,

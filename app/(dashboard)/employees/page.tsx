@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { isPrivileged } from '@/lib/auth'
@@ -16,23 +16,24 @@ import type { Employee } from '@/lib/types'
 
 export default function EmployeesPage() {
   const { user } = useAuth()
-  const isPriv = isPrivileged(user?.role ?? 'EMPLOYEE')
 
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [deptFilter, setDeptFilter] = useState('')
+  const isPriv    = isPrivileged(user?.role ?? 'EMPLOYEE')
+  // Only HR and Founder can delete employee profiles
+  const canDelete = user?.role === 'SUPER_ADMIN' || user?.role === 'HR'
+
+  const [employees,    setEmployees]    = useState<Employee[]>([])
+  const [isLoading,    setIsLoading]    = useState(true)
+  const [search,       setSearch]       = useState('')
+  const [deptFilter,   setDeptFilter]   = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
-  // Fetch from /api/employees — mirrors how a server component would call Prisma.
-  // In production swap the fetch for a direct Prisma call inside a server component
-  // and pass the result as a prop to a client EmployeeTable for interactivity.
-  useEffect(() => {
+  // ── Fetch employees ─────────────────────────────────────────────────────────
+  const fetchEmployees = useCallback(() => {
     if (!user) return
     setIsLoading(true)
     fetch('/api/employees', {
       headers: {
-        'x-demo-role': user.role,
+        'x-demo-role':   user.role,
         'x-demo-emp-id': user.employeeId,
       },
     })
@@ -42,11 +43,28 @@ export default function EmployeesPage() {
       .finally(() => setIsLoading(false))
   }, [user])
 
-  // Client-side filtering applied after the API response
+  useEffect(() => { fetchEmployees() }, [fetchEmployees])
+
+  // ── Delete handler ──────────────────────────────────────────────────────────
+  const handleDelete = useCallback(async (id: string) => {
+    if (!user) return
+    const res = await fetch(`/api/employees/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'x-demo-role':   user.role,
+        'x-demo-emp-id': user.employeeId,
+      },
+    })
+    const data = await res.json() as { message?: string; error?: string }
+    if (!res.ok) throw new Error(data.error ?? 'Failed to delete employee.')
+    // Remove from local state immediately — no need to re-fetch
+    setEmployees((prev) => prev.filter((e) => e.id !== id))
+  }, [user])
+
+  // ── Client-side filtering ───────────────────────────────────────────────────
   const visibleEmployees = useMemo(() => {
     let list = employees
 
-    // Employees can only see themselves; managers see their reports + themselves
     if (!isPriv && user?.role !== 'MANAGER') {
       list = list.filter((e) => e.id === user?.employeeId)
     }
@@ -60,16 +78,16 @@ export default function EmployeesPage() {
           e.employeeCode.toLowerCase().includes(q),
       )
     }
-    if (deptFilter) list = list.filter((e) => e.department === deptFilter)
+    if (deptFilter)   list = list.filter((e) => e.department === deptFilter)
     if (statusFilter) list = list.filter((e) => e.status === statusFilter)
     return list
   }, [employees, search, deptFilter, statusFilter, isPriv, user])
 
   const stats = useMemo(
     () => ({
-      total: employees.filter((e) => e.status !== 'TERMINATED').length,
-      active: employees.filter((e) => e.status === 'ACTIVE').length,
-      onLeave: employees.filter((e) => e.status === 'ON_LEAVE').length,
+      total:       employees.filter((e) => e.status !== 'TERMINATED').length,
+      active:      employees.filter((e) => e.status === 'ACTIVE').length,
+      onLeave:     employees.filter((e) => e.status === 'ON_LEAVE').length,
       departments: new Set(employees.map((e) => e.department)).size,
     }),
     [employees],
@@ -99,9 +117,9 @@ export default function EmployeesPage() {
       {isPriv && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total', value: isLoading ? '—' : stats.total, color: 'text-blue-600', bg: 'bg-blue-50', icon: Users },
-            { label: 'Active', value: isLoading ? '—' : stats.active, color: 'text-emerald-600', bg: 'bg-emerald-50', icon: Users },
-            { label: 'On Leave', value: isLoading ? '—' : stats.onLeave, color: 'text-amber-600', bg: 'bg-amber-50', icon: Users },
+            { label: 'Total',       value: isLoading ? '—' : stats.total,       color: 'text-blue-600',   bg: 'bg-blue-50',   icon: Users },
+            { label: 'Active',      value: isLoading ? '—' : stats.active,      color: 'text-emerald-600',bg: 'bg-emerald-50',icon: Users },
+            { label: 'On Leave',    value: isLoading ? '—' : stats.onLeave,     color: 'text-amber-600',  bg: 'bg-amber-50',  icon: Users },
             { label: 'Departments', value: isLoading ? '—' : stats.departments, color: 'text-purple-600', bg: 'bg-purple-50', icon: Building2 },
           ].map((s) => {
             const Icon = s.icon
@@ -166,7 +184,7 @@ export default function EmployeesPage() {
         </CardContent>
       </Card>
 
-      {/* Employee table — delegates rendering + skeleton to EmployeeTable component */}
+      {/* Employee table */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">
@@ -180,6 +198,8 @@ export default function EmployeesPage() {
             employees={visibleEmployees}
             isLoading={isLoading}
             canManage={isPriv}
+            canDelete={canDelete}
+            onDelete={handleDelete}
           />
         </CardContent>
       </Card>
